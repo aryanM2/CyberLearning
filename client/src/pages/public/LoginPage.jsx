@@ -1,17 +1,41 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Shield, Lock, Mail, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 export function LoginPage() {
-  const [email, setEmail] = useState('alex.vance@nextgen-sec.com');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState('');
+  
+  const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Module 1 mock navigation
-    navigate('/app/dashboard');
+    setSubmitting(true);
+    setFormError('');
+
+    try {
+      const result = await login(email, password);
+      if (result.success) {
+        if (result.user?.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/app/dashboard');
+        }
+      } else {
+        setFormError(result.error || 'Login failed. Please check your credentials.');
+      }
+    } catch (err) {
+      setFormError(err.message || 'Connecting to backend failed. Proceeding with demo mode...');
+      // Demo fallback if backend is offline
+      setTimeout(() => navigate('/app/dashboard'), 1000);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -25,6 +49,12 @@ export function LoginPage() {
           <h2 className="text-2xl font-extrabold text-white">Welcome Back</h2>
           <p className="text-xs text-gray-400">Sign in to continue your cybersecurity streak</p>
         </div>
+
+        {formError && (
+          <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg text-xs text-rose-400 text-center font-medium">
+            {formError}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -67,8 +97,12 @@ export function LoginPage() {
             </div>
           </div>
 
-          <button type="submit" className="btn-primary w-full py-3 justify-center text-sm font-bold mt-2">
-            Sign In to Academy <ArrowRight className="w-4 h-4" />
+          <button 
+            type="submit" 
+            disabled={submitting}
+            className="btn-primary w-full py-3 justify-center text-sm font-bold mt-2 disabled:opacity-50"
+          >
+            {submitting ? 'Authenticating...' : 'Sign In to Academy'} <ArrowRight className="w-4 h-4" />
           </button>
         </form>
 
@@ -83,3 +117,4 @@ export function LoginPage() {
     </div>
   );
 }
+

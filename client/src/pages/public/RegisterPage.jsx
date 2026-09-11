@@ -1,19 +1,39 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Shield, Lock, Mail, User, ArrowRight } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 export function RegisterPage() {
   const [formData, setFormData] = useState({
-    name: 'Alex Vance',
-    username: 'vance_sec',
-    email: 'alex.vance@nextgen-sec.com',
-    password: 'password123',
+    name: '',
+    email: '',
+    password: '',
+    role: 'user',
   });
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState('');
+
+  const { register } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    navigate('/app/dashboard');
+    setSubmitting(true);
+    setFormError('');
+
+    try {
+      const result = await register(formData.name, formData.email, formData.password, formData.role);
+      if (result.success) {
+        navigate('/app/dashboard');
+      } else {
+        setFormError(result.error || 'Registration failed. Please check your details.');
+      }
+    } catch (err) {
+      setFormError(err.message || 'Registration failed. Fallback to mock navigation.');
+      setTimeout(() => navigate('/app/dashboard'), 1000);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -28,6 +48,12 @@ export function RegisterPage() {
           <p className="text-xs text-gray-400">Create your cybersecurity learning profile</p>
         </div>
 
+        {formError && (
+          <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg text-xs text-rose-400 text-center font-medium">
+            {formError}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1">Full Name</label>
@@ -38,20 +64,10 @@ export function RegisterPage() {
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
                 className="input-cyber pl-10" 
+                placeholder="Alex Vance"
                 required
               />
             </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1">Handle / Username</label>
-            <input 
-              type="text" 
-              value={formData.username}
-              onChange={(e) => setFormData({...formData, username: e.target.value})}
-              className="input-cyber" 
-              required
-            />
           </div>
 
           <div>
@@ -63,6 +79,7 @@ export function RegisterPage() {
                 value={formData.email}
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
                 className="input-cyber pl-10" 
+                placeholder="alex.vance@nextgen-sec.com"
                 required
               />
             </div>
@@ -77,13 +94,30 @@ export function RegisterPage() {
                 value={formData.password}
                 onChange={(e) => setFormData({...formData, password: e.target.value})}
                 className="input-cyber pl-10" 
+                placeholder="••••••••"
                 required
               />
             </div>
           </div>
 
-          <button type="submit" className="btn-primary w-full py-3 justify-center text-sm font-bold mt-2">
-            Create Account & Earn 100 XP <ArrowRight className="w-4 h-4" />
+          <div>
+            <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1">Account Role</label>
+            <select
+              value={formData.role}
+              onChange={(e) => setFormData({...formData, role: e.target.value})}
+              className="input-cyber"
+            >
+              <option value="user" className="bg-[#111726]">User / Learner</option>
+              <option value="admin" className="bg-[#111726]">Platform Admin</option>
+            </select>
+          </div>
+
+          <button 
+            type="submit" 
+            disabled={submitting}
+            className="btn-primary w-full py-3 justify-center text-sm font-bold mt-2 disabled:opacity-50"
+          >
+            {submitting ? 'Creating Account...' : 'Create Account & Earn 100 XP'} <ArrowRight className="w-4 h-4" />
           </button>
         </form>
 
@@ -98,3 +132,4 @@ export function RegisterPage() {
     </div>
   );
 }
+

@@ -22,15 +22,14 @@ export function RegisterPage() {
     setFormError('');
 
     try {
-      const result = await register(formData.name, formData.email, formData.password, formData.role);
+      const result = await register(formData.name, formData.email, formData.password, 'user');
       if (result.success) {
         navigate('/app/dashboard');
       } else {
         setFormError(result.error || 'Registration failed. Please check your details.');
       }
     } catch (err) {
-      setFormError(err.message || 'Registration failed. Fallback to mock navigation.');
-      setTimeout(() => navigate('/app/dashboard'), 1000);
+      setFormError(err.message || 'Registration failed. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -58,12 +57,14 @@ export function RegisterPage() {
           <div>
             <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1">Full Name</label>
             <div className="relative">
-              <User className="w-4 h-4 text-gray-500 absolute left-3 top-3" />
+              <span className="input-icon-left">
+                <User className="w-4 h-4" />
+              </span>
               <input 
                 type="text" 
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
-                className="input-cyber pl-10" 
+                className="input-cyber has-left-icon" 
                 placeholder="Alex Vance"
                 required
               />
@@ -73,12 +74,14 @@ export function RegisterPage() {
           <div>
             <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1">Email Address</label>
             <div className="relative">
-              <Mail className="w-4 h-4 text-gray-500 absolute left-3 top-3" />
+              <span className="input-icon-left">
+                <Mail className="w-4 h-4" />
+              </span>
               <input 
                 type="email" 
                 value={formData.email}
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
-                className="input-cyber pl-10" 
+                className="input-cyber has-left-icon" 
                 placeholder="alex.vance@nextgen-sec.com"
                 required
               />
@@ -88,28 +91,18 @@ export function RegisterPage() {
           <div>
             <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1">Password</label>
             <div className="relative">
-              <Lock className="w-4 h-4 text-gray-500 absolute left-3 top-3" />
+              <span className="input-icon-left">
+                <Lock className="w-4 h-4" />
+              </span>
               <input 
                 type="password" 
                 value={formData.password}
                 onChange={(e) => setFormData({...formData, password: e.target.value})}
-                className="input-cyber pl-10" 
+                className="input-cyber has-left-icon" 
                 placeholder="••••••••"
                 required
               />
             </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1">Account Role</label>
-            <select
-              value={formData.role}
-              onChange={(e) => setFormData({...formData, role: e.target.value})}
-              className="input-cyber"
-            >
-              <option value="user" className="bg-[#111726]">User / Learner</option>
-              <option value="admin" className="bg-[#111726]">Platform Admin</option>
-            </select>
           </div>
 
           <button 
@@ -117,7 +110,7 @@ export function RegisterPage() {
             disabled={submitting}
             className="btn-primary w-full py-3 justify-center text-sm font-bold mt-2 disabled:opacity-50"
           >
-            {submitting ? 'Creating Account...' : 'Create Account & Earn 100 XP'} <ArrowRight className="w-4 h-4" />
+            {submitting ? 'Creating Account...' : 'Create Account'} <ArrowRight className="w-4 h-4" />
           </button>
         </form>
 

@@ -14,6 +14,20 @@ export const loginApi = async (email, password) => {
   });
 };
 
+export const forgotPasswordApi = async (email) => {
+  return await apiRequest('/auth/forgotpassword', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+};
+
+export const resetPasswordApi = async (token, password) => {
+  return await apiRequest(`/auth/resetpassword/${token}`, {
+    method: 'PUT',
+    body: JSON.stringify({ password }),
+  });
+};
+
 export const getMeApi = async () => {
   return await apiRequest('/auth/me', {
     method: 'GET',

@@ -1,25 +1,55 @@
-import React, { useState } from 'react';
-import { Target, Search, Filter, ShieldAlert, Award } from 'lucide-react';
-import { challenges } from '../../data/mockData';
+import React, { useEffect, useState } from 'react';
+import { Target, Search, Filter, ShieldAlert, Award, Loader2 } from 'lucide-react';
+import { getChallengesApi } from '../../services/challengeService';
 import { ChallengeCard } from '../../components/cards/ChallengeCard';
 
 export function ChallengesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDifficulty, setSelectedDifficulty] = useState('All');
   const [filterCompleted, setFilterCompleted] = useState('All');
+  const [challenges, setChallenges] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadChallenges = async () => {
+      try {
+        setLoading(true);
+        const res = await getChallengesApi();
+        if (res.success && res.data) {
+          setChallenges(res.data);
+        }
+      } catch (err) {
+        console.error('Failed to load challenges:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadChallenges();
+  }, []);
 
   const filtered = challenges.filter((c) => {
-    const matchesSearch = c.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          c.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const titleMatch = (c.title || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const descMatch = (c.description || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = titleMatch || descMatch;
     const matchesDifficulty = selectedDifficulty === 'All' || c.difficulty === selectedDifficulty;
+    const isSolved = c.solved || c.completed;
     const matchesCompleted = filterCompleted === 'All' || 
-                             (filterCompleted === 'Solved' && c.completed) ||
-                             (filterCompleted === 'Unsolved' && !c.completed);
+                             (filterCompleted === 'Solved' && isSolved) ||
+                             (filterCompleted === 'Unsolved' && !isSolved);
     return matchesSearch && matchesDifficulty && matchesCompleted;
   });
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 max-w-7xl mx-auto">
       
       {/* Header */}
       <div>
@@ -33,13 +63,15 @@ export function ChallengesPage() {
       <div className="cyber-card p-4 space-y-4">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-gray-500 absolute left-3 top-3.5" />
+            <span className="input-icon-left">
+              <Search className="w-4 h-4" />
+            </span>
             <input 
               type="text" 
               placeholder="Search challenges by title or keyword..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="input-cyber pl-10"
+              className="input-cyber has-left-icon"
             />
           </div>
 
@@ -80,7 +112,7 @@ export function ChallengesPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((chal) => (
-              <ChallengeCard key={chal.id} challenge={chal} />
+              <ChallengeCard key={chal._id || chal.id} challenge={chal} />
             ))}
           </div>
         )}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy, Lock, Zap, Flame, BookOpen, Key, GraduationCap, ShieldAlert } from 'lucide-react';
+import { Trophy, Lock, Zap, Flame, BookOpen, Key, GraduationCap, ShieldAlert, Award, Terminal, Shield } from 'lucide-react';
 
 const iconMap = {
   BookOpen: BookOpen,
@@ -7,11 +7,15 @@ const iconMap = {
   Flame: Flame,
   GraduationCap: GraduationCap,
   ShieldAlert: ShieldAlert,
-  Trophy: Trophy
+  Trophy: Trophy,
+  Award: Award,
+  Terminal: Terminal,
+  Shield: Shield,
 };
 
 export function AchievementCard({ achievement }) {
   const IconComponent = iconMap[achievement.icon] || Trophy;
+  const xpVal = achievement.xpReward || achievement.xpBonus || 50;
 
   return (
     <div className={`cyber-card p-6 flex items-start gap-4 transition-all h-full ${
@@ -46,9 +50,9 @@ export function AchievementCard({ achievement }) {
         </div>
 
         <div className="flex items-center justify-between text-xs font-mono text-gray-400 border-t border-white/5 pt-3 mt-auto">
-          <span>Progress: <strong className="text-gray-200">{achievement.progress}</strong></span>
+          <span>Req: <strong className="text-gray-200">{achievement.requirementThreshold || 1} {achievement.requirementType || 'action'}</strong></span>
           <span className="text-cyan-400 font-bold flex items-center gap-1">
-            <Zap className="w-3.5 h-3.5 fill-cyan-400 text-cyan-400" /> +{achievement.xpBonus} XP
+            <Zap className="w-3.5 h-3.5 fill-cyan-400 text-cyan-400" /> +{xpVal} XP
           </span>
         </div>
       </div>

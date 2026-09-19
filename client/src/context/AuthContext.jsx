@@ -9,32 +9,37 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Load user profile if token exists
+  // Load user profile on initial render
   useEffect(() => {
     const initializeAuth = async () => {
-      if (token) {
+      const storedToken = localStorage.getItem('token');
+      if (storedToken && storedToken !== 'mock-token-admin' && storedToken !== 'mock-token-user') {
         try {
           const response = await getMeApi();
           if (response.success && response.data?.user) {
             setUser(response.data.user);
+            setToken(storedToken);
           } else {
-            // Token invalid or expired
             localStorage.removeItem('token');
             setToken(null);
             setUser(null);
           }
         } catch (err) {
-          console.warn('[AuthContext] Initial token verification failed:', err.message);
+          console.error('[AuthContext] Verification failed:', err.message);
           localStorage.removeItem('token');
           setToken(null);
           setUser(null);
         }
+      } else {
+        localStorage.removeItem('token');
+        setToken(null);
+        setUser(null);
       }
       setLoading(false);
     };
 
     initializeAuth();
-  }, [token]);
+  }, []);
 
   const login = async (email, password) => {
     setError(null);
@@ -47,10 +52,11 @@ export const AuthProvider = ({ children }) => {
         setUser(userData);
         return { success: true, user: userData };
       }
-      throw new Error(res.message || 'Login failed');
+      return { success: false, error: res.message || 'Login failed' };
     } catch (err) {
-      setError(err.message);
-      return { success: false, error: err.message };
+      const errorMsg = err.message || 'Login failed. Please check your credentials.';
+      setError(errorMsg);
+      return { success: false, error: errorMsg };
     }
   };
 
@@ -65,10 +71,11 @@ export const AuthProvider = ({ children }) => {
         setUser(userData);
         return { success: true, user: userData };
       }
-      throw new Error(res.message || 'Registration failed');
+      return { success: false, error: res.message || 'Registration failed' };
     } catch (err) {
-      setError(err.message);
-      return { success: false, error: err.message };
+      const errorMsg = err.message || 'Registration failed. Please check your inputs.';
+      setError(errorMsg);
+      return { success: false, error: errorMsg };
     }
   };
 
@@ -84,6 +91,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateUser = (updatedFields) => {
+    setUser((prev) => (prev ? { ...prev, ...updatedFields } : updatedFields));
+  };
+
   const value = {
     user,
     token,
@@ -94,6 +105,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    updateUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

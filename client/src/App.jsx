@@ -1,6 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ProtectedRoute } from './components/common/ProtectedRoute';
+import { AdminRoute } from './components/common/AdminRoute';
 
 // Layouts
 import { PublicLayout } from './layouts/PublicLayout';
@@ -12,6 +14,7 @@ import { LandingPage } from './pages/public/LandingPage';
 import { LoginPage } from './pages/public/LoginPage';
 import { RegisterPage } from './pages/public/RegisterPage';
 import { ForgotPasswordPage } from './pages/public/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/public/ResetPasswordPage';
 
 // User Pages
 import { DashboardPage } from './pages/user/DashboardPage';
@@ -48,34 +51,39 @@ export function App() {
             <Route path="login" element={<LoginPage />} />
             <Route path="register" element={<RegisterPage />} />
             <Route path="forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="reset-password/:token" element={<ResetPasswordPage />} />
           </Route>
 
-          {/* User Application Routes */}
-          <Route path="/app" element={<UserLayout />}>
-            <Route index element={<Navigate to="/app/dashboard" replace />} />
-            <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="articles" element={<ArticlesPage />} />
-            <Route path="articles/:id" element={<ArticleDetailPage />} />
-            <Route path="challenges" element={<ChallengesPage />} />
-            <Route path="challenges/:id" element={<ChallengeDetailPage />} />
-            <Route path="achievements" element={<AchievementsPage />} />
-            <Route path="leaderboard" element={<LeaderboardPage />} />
-            <Route path="rewards" element={<RewardsPage />} />
-            <Route path="profile" element={<ProfilePage />} />
-            <Route path="activity" element={<ActivityPage />} />
+          {/* Protected Learner Application Routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/app" element={<UserLayout />}>
+              <Route index element={<Navigate to="/app/dashboard" replace />} />
+              <Route path="dashboard" element={<DashboardPage />} />
+              <Route path="articles" element={<ArticlesPage />} />
+              <Route path="articles/:id" element={<ArticleDetailPage />} />
+              <Route path="challenges" element={<ChallengesPage />} />
+              <Route path="challenges/:id" element={<ChallengeDetailPage />} />
+              <Route path="achievements" element={<AchievementsPage />} />
+              <Route path="leaderboard" element={<LeaderboardPage />} />
+              <Route path="rewards" element={<RewardsPage />} />
+              <Route path="profile" element={<ProfilePage />} />
+              <Route path="activity" element={<ActivityPage />} />
+            </Route>
           </Route>
 
-          {/* Admin Application Routes */}
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<AdminDashboardPage />} />
-            <Route path="users" element={<AdminUsersPage />} />
-            <Route path="articles" element={<AdminArticlesPage />} />
-            <Route path="categories" element={<AdminCategoriesPage />} />
-            <Route path="challenges" element={<AdminChallengesPage />} />
-            <Route path="achievements" element={<AdminAchievementsPage />} />
-            <Route path="rewards" element={<AdminRewardsPage />} />
-            <Route path="analytics" element={<AdminAnalyticsPage />} />
-            <Route path="settings" element={<AdminSettingsPage />} />
+          {/* Protected Admin Application Routes (Requires role: admin) */}
+          <Route element={<AdminRoute />}>
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboardPage />} />
+              <Route path="users" element={<AdminUsersPage />} />
+              <Route path="articles" element={<AdminArticlesPage />} />
+              <Route path="categories" element={<AdminCategoriesPage />} />
+              <Route path="challenges" element={<AdminChallengesPage />} />
+              <Route path="achievements" element={<AdminAchievementsPage />} />
+              <Route path="rewards" element={<AdminRewardsPage />} />
+              <Route path="analytics" element={<AdminAnalyticsPage />} />
+              <Route path="settings" element={<AdminSettingsPage />} />
+            </Route>
           </Route>
 
           {/* Fallback */}
@@ -88,4 +96,3 @@ export function App() {
 }
 
 export default App;
-

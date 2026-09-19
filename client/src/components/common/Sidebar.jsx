@@ -1,13 +1,26 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, BookOpen, Target, Trophy, Award, Gift, 
-  User, Activity, Crown, Users, FileText, FolderTree, BarChart3, Settings, ShieldAlert, LogOut 
+  User, Activity, Crown, Users, FileText, FolderTree, BarChart3, Settings, LogOut 
 } from 'lucide-react';
-import { currentUser } from '../../data/mockData';
+import { useAuth } from '../../context/AuthContext';
 
 export function Sidebar({ isAdmin = false }) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, isAdmin: isUserAdmin, logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
+
+  const getAvatarUrl = () => {
+    if (user?.avatar) return user.avatar;
+    const nameSeed = encodeURIComponent(user?.name || 'Agent');
+    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${nameSeed}`;
+  };
 
   const userNav = [
     { label: 'Dashboard', path: '/app/dashboard', icon: LayoutDashboard },
@@ -42,21 +55,23 @@ export function Sidebar({ isAdmin = false }) {
         {!isAdmin ? (
           <div className="bg-[#111726] border border-gray-800 rounded-xl p-4 flex items-center gap-3">
             <img 
-              src={currentUser.avatar} 
-              alt={currentUser.name} 
+              src={getAvatarUrl()} 
+              alt={user?.name || 'User'} 
               className="w-11 h-11 rounded-full object-cover border-2 border-cyan-500/50"
             />
             <div className="overflow-hidden">
-              <h4 className="text-white text-sm font-bold truncate">{currentUser.name}</h4>
-              <p className="text-xs text-cyan-400 font-medium truncate">Lvl {currentUser.level} • {currentUser.title}</p>
+              <h4 className="text-white text-sm font-bold truncate">{user?.name || 'Researcher'}</h4>
+              <p className="text-xs text-cyan-400 font-medium truncate">
+                {user?.role === 'admin' ? 'Security Admin' : `Lvl ${user?.level || 1} • Cyber Cadet`}
+              </p>
             </div>
           </div>
         ) : (
           <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex items-center gap-3">
-            <Crown className="w-8 h-8 text-amber-400" />
-            <div>
+            <Crown className="w-8 h-8 text-amber-400 shrink-0" />
+            <div className="overflow-hidden">
               <h4 className="text-amber-400 text-sm font-extrabold uppercase tracking-wide">Admin Portal</h4>
-              <p className="text-[11px] text-gray-400">NextGen Securities</p>
+              <p className="text-[11px] text-gray-400 truncate">{user?.name || 'System Admin'}</p>
             </div>
           </div>
         )}
@@ -89,17 +104,14 @@ export function Sidebar({ isAdmin = false }) {
 
       </div>
 
-      {/* Footer Switch Link */}
+      {/* Footer Actions */}
       <div className="p-4 border-t border-gray-800">
-        {isAdmin ? (
-          <Link to="/app/dashboard" className="flex items-center gap-2 text-xs font-semibold text-gray-400 hover:text-cyan-400 transition-colors">
-            <LogOut className="w-4 h-4" /> Exit Admin View
-          </Link>
-        ) : (
-          <Link to="/login" className="flex items-center gap-2 text-xs font-semibold text-gray-400 hover:text-red-400 transition-colors">
-            <LogOut className="w-4 h-4" /> Logout Session
-          </Link>
-        )}
+        <button 
+          onClick={handleLogout} 
+          className="w-full flex items-center gap-2 text-xs font-semibold text-gray-400 hover:text-rose-400 transition-colors"
+        >
+          <LogOut className="w-4 h-4 text-rose-400" /> Logout Session
+        </button>
       </div>
     </aside>
   );

@@ -12,6 +12,11 @@ export function ArticleCard({ article }) {
     }
   };
 
+  const articleId = article._id || article.id;
+  const isCompleted = article.completed || article.read;
+  const readTimeStr = article.readTime || article.readingTime || '5 min read';
+  const descriptionStr = article.excerpt || article.description || '';
+
   return (
     <div className="cyber-card cyber-card-hover p-6 flex flex-col justify-between h-full group">
       <div>
@@ -20,7 +25,7 @@ export function ArticleCard({ article }) {
             {article.difficulty}
           </span>
           <span className="text-xs text-gray-400 flex items-center gap-1 font-mono">
-            <Clock className="w-3.5 h-3.5 text-gray-500" /> {article.readingTime}
+            <Clock className="w-3.5 h-3.5 text-gray-500" /> {readTimeStr}
           </span>
         </div>
 
@@ -29,7 +34,7 @@ export function ArticleCard({ article }) {
         </h3>
 
         <p className="text-xs text-gray-400 line-clamp-3 mb-4 leading-relaxed">
-          {article.description}
+          {descriptionStr}
         </p>
       </div>
 
@@ -38,13 +43,13 @@ export function ArticleCard({ article }) {
           <Zap className="w-4 h-4 fill-cyan-400 text-cyan-400" /> +{article.xpReward} XP
         </span>
 
-        {article.read ? (
+        {isCompleted ? (
           <span className="text-emerald-400 font-semibold flex items-center gap-1 bg-emerald-500/10 px-2.5 py-1 rounded-md border border-emerald-500/20">
             <CheckCircle2 className="w-3.5 h-3.5" /> Completed
           </span>
         ) : (
           <Link 
-            to={`/app/articles/${article.id}`} 
+            to={`/app/articles/${articleId}`} 
             className="text-gray-300 font-semibold hover:text-cyan-400 flex items-center gap-1 group-hover:translate-x-1 transition-transform"
           >
             Read Article <ArrowRight className="w-3.5 h-3.5" />

@@ -30,9 +30,7 @@ export function LoginPage() {
         setFormError(result.error || 'Login failed. Please check your credentials.');
       }
     } catch (err) {
-      setFormError(err.message || 'Connecting to backend failed. Proceeding with demo mode...');
-      // Demo fallback if backend is offline
-      setTimeout(() => navigate('/app/dashboard'), 1000);
+      setFormError(err.message || 'Login error occurred');
     } finally {
       setSubmitting(false);
     }
@@ -47,7 +45,7 @@ export function LoginPage() {
             <Shield className="w-6 h-6 text-white" />
           </div>
           <h2 className="text-2xl font-extrabold text-white">Welcome Back</h2>
-          <p className="text-xs text-gray-400">Sign in to continue your cybersecurity streak</p>
+          <p className="text-xs text-gray-400">Sign in to access your cybersecurity portal</p>
         </div>
 
         {formError && (
@@ -60,13 +58,15 @@ export function LoginPage() {
           <div>
             <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1">Email Address</label>
             <div className="relative">
-              <Mail className="w-4 h-4 text-gray-500 absolute left-3 top-3" />
+              <span className="input-icon-left">
+                <Mail className="w-4 h-4" />
+              </span>
               <input 
                 type="email" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="input-cyber pl-10" 
-                placeholder="developer@nextgen-sec.com" 
+                className="input-cyber has-left-icon" 
+                placeholder="name@company.com" 
                 required
               />
             </div>
@@ -78,19 +78,21 @@ export function LoginPage() {
               <Link to="/forgot-password" className="text-xs text-cyan-400 hover:underline">Forgot?</Link>
             </div>
             <div className="relative">
-              <Lock className="w-4 h-4 text-gray-500 absolute left-3 top-3" />
+              <span className="input-icon-left">
+                <Lock className="w-4 h-4" />
+              </span>
               <input 
                 type={showPassword ? "text" : "password"} 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="input-cyber pl-10 pr-10" 
+                className="input-cyber has-left-icon has-right-icon" 
                 placeholder="••••••••" 
                 required
               />
               <button 
                 type="button" 
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-3 text-gray-500 hover:text-gray-300"
+                className="input-icon-right hover:text-white transition-colors focus:outline-none"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -102,7 +104,7 @@ export function LoginPage() {
             disabled={submitting}
             className="btn-primary w-full py-3 justify-center text-sm font-bold mt-2 disabled:opacity-50"
           >
-            {submitting ? 'Authenticating...' : 'Sign In to Academy'} <ArrowRight className="w-4 h-4" />
+            {submitting ? 'Authenticating...' : 'Sign In to Portal'} <ArrowRight className="w-4 h-4" />
           </button>
         </form>
 
@@ -117,4 +119,3 @@ export function LoginPage() {
     </div>
   );
 }
-

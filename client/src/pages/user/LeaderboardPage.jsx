@@ -1,12 +1,47 @@
-import React, { useState } from 'react';
-import { Trophy, Award, Flame, Zap, Crown, User, Shield } from 'lucide-react';
-import { leaderboardData } from '../../data/mockData';
+import React, { useEffect, useState } from 'react';
+import { Trophy, Award, Flame, Zap, Crown, User as UserIcon, Shield, Loader2 } from 'lucide-react';
+import { getLeaderboardApi } from '../../services/leaderboardService';
+import { useAuth } from '../../context/AuthContext';
 
 export function LeaderboardPage() {
-  const [timeframe, setTimeframe] = useState('Global');
+  const { user: authUser } = useAuth();
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [userRank, setUserRank] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      try {
+        setLoading(true);
+        const res = await getLeaderboardApi();
+        if (res.success && res.data) {
+          setLeaderboard(res.data.leaderboard || []);
+          setUserRank(res.data.currentUserRank);
+        }
+      } catch (err) {
+        console.error('Failed to load leaderboard:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLeaderboard();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+      </div>
+    );
+  }
+
+  const top1 = leaderboard[0];
+  const top2 = leaderboard[1];
+  const top3 = leaderboard[2];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 max-w-7xl mx-auto">
       
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -17,74 +52,82 @@ export function LeaderboardPage() {
           </p>
         </div>
 
-        {/* Timeframe selector */}
-        <div className="flex bg-[#111726] border border-gray-800 p-1 rounded-xl">
-          {['Global', 'Weekly', 'Monthly'].map((t) => (
-            <button
-              key={t}
-              onClick={() => setTimeframe(t)}
-              className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                timeframe === t 
-                  ? 'bg-cyan-500 text-white shadow' 
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
+        {userRank && (
+          <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-xl px-5 py-3 text-center">
+            <div className="text-xl font-extrabold text-cyan-400 font-mono">
+              #{userRank}
+            </div>
+            <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Your Global Rank</div>
+          </div>
+        )}
       </div>
 
       {/* TOP 3 PODIUM */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
-        {/* 2nd Place */}
-        <div className="cyber-card p-6 text-center bg-gradient-to-b from-[#111726] to-[#0D1322] border-gray-800 flex flex-col justify-between order-2 md:order-1">
-          <div>
-            <div className="w-12 h-12 rounded-full bg-slate-700/50 text-slate-300 mx-auto flex items-center justify-center font-bold font-mono mb-3 border border-slate-500">
-              #2
+      {leaderboard.length >= 1 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+          
+          {/* 2nd Place */}
+          {top2 ? (
+            <div className="cyber-card p-6 text-center bg-gradient-to-b from-[#111726] to-[#0D1322] border-gray-800 flex flex-col justify-between order-2 md:order-1">
+              <div>
+                <div className="w-12 h-12 rounded-full bg-slate-700/50 text-slate-300 mx-auto flex items-center justify-center font-bold font-mono mb-3 border border-slate-500">
+                  #2
+                </div>
+                <div className="w-16 h-16 rounded-full bg-slate-800 border-2 border-slate-400 mx-auto mb-2 flex items-center justify-center text-slate-300 font-bold text-xl overflow-hidden">
+                  {top2.avatar ? <img src={top2.avatar} alt={top2.name} className="w-full h-full object-cover" /> : top2.name.charAt(0)}
+                </div>
+                <h3 className="font-bold text-white text-base">{top2.name}</h3>
+                <p className="text-xs text-gray-400">Level {top2.level}</p>
+              </div>
+              <div className="mt-4 pt-3 border-t border-gray-800 text-cyan-400 font-extrabold text-sm font-mono">
+                {top2.xp.toLocaleString()} XP
+              </div>
             </div>
-            <img src={leaderboardData[1].avatar} alt={leaderboardData[1].name} className="w-16 h-16 rounded-full object-cover mx-auto mb-2 border-2 border-slate-400" />
-            <h3 className="font-bold text-white text-base">{leaderboardData[1].name}</h3>
-            <p className="text-xs text-gray-400">Level {leaderboardData[1].level}</p>
-          </div>
-          <div className="mt-4 pt-3 border-t border-gray-800 text-cyan-400 font-extrabold text-sm font-mono">
-            {leaderboardData[1].xp.toLocaleString()} XP
-          </div>
-        </div>
+          ) : <div />}
 
-        {/* 1st Place - Champion */}
-        <div className="cyber-card p-6 text-center bg-gradient-to-b from-cyan-950/40 via-[#111726] to-[#0D1322] border-amber-500/50 relative flex flex-col justify-between order-1 md:order-2 shadow-xl shadow-amber-500/10">
-          <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-amber-500 text-black text-xs font-extrabold px-3 py-1 rounded-full flex items-center gap-1 shadow-lg">
-            <Crown className="w-3.5 h-3.5 fill-black" /> CHAMPION
-          </div>
-          <div className="pt-2">
-            <div className="w-14 h-14 rounded-full bg-amber-500/20 text-amber-400 mx-auto flex items-center justify-center font-extrabold font-mono text-lg mb-3 border-2 border-amber-500">
-              #1
+          {/* 1st Place - Champion */}
+          {top1 && (
+            <div className="cyber-card p-6 text-center bg-gradient-to-b from-cyan-950/40 via-[#111726] to-[#0D1322] border-amber-500/50 relative flex flex-col justify-between order-1 md:order-2 shadow-xl shadow-amber-500/10">
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-amber-500 text-black text-xs font-extrabold px-3 py-1 rounded-full flex items-center gap-1 shadow-lg">
+                <Crown className="w-3.5 h-3.5 fill-black" /> CHAMPION
+              </div>
+              <div className="pt-2">
+                <div className="w-14 h-14 rounded-full bg-amber-500/20 text-amber-400 mx-auto flex items-center justify-center font-extrabold font-mono text-lg mb-3 border-2 border-amber-500">
+                  #1
+                </div>
+                <div className="w-20 h-20 rounded-full bg-amber-500/20 border-4 border-amber-500 shadow-lg shadow-amber-500/20 mx-auto mb-2 flex items-center justify-center text-amber-400 font-bold text-2xl overflow-hidden">
+                  {top1.avatar ? <img src={top1.avatar} alt={top1.name} className="w-full h-full object-cover" /> : top1.name.charAt(0)}
+                </div>
+                <h3 className="font-extrabold text-white text-lg">{top1.name}</h3>
+                <p className="text-xs text-amber-400 font-semibold">Level {top1.level}</p>
+              </div>
+              <div className="mt-4 pt-3 border-t border-gray-800 text-amber-400 font-extrabold text-base font-mono">
+                {top1.xp.toLocaleString()} XP
+              </div>
             </div>
-            <img src={leaderboardData[0].avatar} alt={leaderboardData[0].name} className="w-20 h-20 rounded-full object-cover mx-auto mb-2 border-4 border-amber-500 shadow-lg shadow-amber-500/20" />
-            <h3 className="font-extrabold text-white text-lg">{leaderboardData[0].name}</h3>
-            <p className="text-xs text-amber-400 font-semibold">Level {leaderboardData[0].level}</p>
-          </div>
-          <div className="mt-4 pt-3 border-t border-gray-800 text-amber-400 font-extrabold text-base font-mono">
-            {leaderboardData[0].xp.toLocaleString()} XP
-          </div>
-        </div>
+          )}
 
-        {/* 3rd Place */}
-        <div className="cyber-card p-6 text-center bg-gradient-to-b from-[#111726] to-[#0D1322] border-gray-800 flex flex-col justify-between order-3">
-          <div>
-            <div className="w-12 h-12 rounded-full bg-amber-900/30 text-amber-600 mx-auto flex items-center justify-center font-bold font-mono mb-3 border border-amber-700">
-              #3
+          {/* 3rd Place */}
+          {top3 ? (
+            <div className="cyber-card p-6 text-center bg-gradient-to-b from-[#111726] to-[#0D1322] border-gray-800 flex flex-col justify-between order-3">
+              <div>
+                <div className="w-12 h-12 rounded-full bg-amber-900/30 text-amber-600 mx-auto flex items-center justify-center font-bold font-mono mb-3 border border-amber-700">
+                  #3
+                </div>
+                <div className="w-16 h-16 rounded-full bg-amber-900/20 border-2 border-amber-700 mx-auto mb-2 flex items-center justify-center text-amber-500 font-bold text-xl overflow-hidden">
+                  {top3.avatar ? <img src={top3.avatar} alt={top3.name} className="w-full h-full object-cover" /> : top3.name.charAt(0)}
+                </div>
+                <h3 className="font-bold text-white text-base">{top3.name}</h3>
+                <p className="text-xs text-gray-400">Level {top3.level}</p>
+              </div>
+              <div className="mt-4 pt-3 border-t border-gray-800 text-cyan-400 font-extrabold text-sm font-mono">
+                {top3.xp.toLocaleString()} XP
+              </div>
             </div>
-            <img src={leaderboardData[2].avatar} alt={leaderboardData[2].name} className="w-16 h-16 rounded-full object-cover mx-auto mb-2 border-2 border-amber-700" />
-            <h3 className="font-bold text-white text-base">{leaderboardData[2].name}</h3>
-            <p className="text-xs text-gray-400">Level {leaderboardData[2].level}</p>
-          </div>
-          <div className="mt-4 pt-3 border-t border-gray-800 text-cyan-400 font-extrabold text-sm font-mono">
-            {leaderboardData[2].xp.toLocaleString()} XP
-          </div>
+          ) : <div />}
+
         </div>
-      </div>
+      )}
 
       {/* COMPLETE TABLE LISTING */}
       <div className="cyber-card overflow-hidden">
@@ -99,40 +142,45 @@ export function LeaderboardPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-800/60 text-sm">
-            {leaderboardData.map((user) => (
-              <tr 
-                key={user.rank}
-                className={`transition-colors ${
-                  user.isCurrentUser 
-                    ? 'bg-cyan-500/10 border-l-4 border-l-cyan-400 font-bold' 
-                    : 'hover:bg-gray-800/40'
-                }`}
-              >
-                <td className="p-4 text-center font-mono font-bold text-gray-400">
-                  #{user.rank}
-                </td>
-                <td className="p-4 flex items-center gap-3">
-                  <img src={user.avatar} alt={user.name} className="w-9 h-9 rounded-full object-cover border border-gray-700" />
-                  <div>
-                    <div className={`font-bold ${user.isCurrentUser ? 'text-cyan-400' : 'text-white'}`}>
-                      {user.name}
+            {leaderboard.map((user) => {
+              const isCurrent = authUser && (user._id === authUser.id || user._id === authUser._id);
+              return (
+                <tr 
+                  key={user.rank}
+                  className={`transition-colors ${
+                    isCurrent 
+                      ? 'bg-cyan-500/10 border-l-4 border-l-cyan-400 font-bold' 
+                      : 'hover:bg-gray-800/40'
+                  }`}
+                >
+                  <td className="p-4 text-center font-mono font-bold text-gray-400">
+                    #{user.rank}
+                  </td>
+                  <td className="p-4 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-cyan-500/20 text-cyan-400 font-bold flex items-center justify-center overflow-hidden shrink-0 border border-gray-700">
+                      {user.avatar ? <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" /> : user.name.charAt(0)}
                     </div>
-                    <div className="text-xs text-gray-400">@{user.username}</div>
-                  </div>
-                </td>
-                <td className="p-4 font-semibold text-gray-300">
-                  Level {user.level}
-                </td>
-                <td className="p-4 text-center">
-                  <span className="inline-flex items-center gap-1 text-amber-400 font-bold text-xs bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">
-                    <Flame className="w-3.5 h-3.5 fill-amber-400" /> {user.streak}d
-                  </span>
-                </td>
-                <td className="p-4 text-right font-mono font-extrabold text-cyan-400">
-                  {user.xp.toLocaleString()} XP
-                </td>
-              </tr>
-            ))}
+                    <div>
+                      <div className={`font-bold ${isCurrent ? 'text-cyan-400' : 'text-white'}`}>
+                        {user.name}
+                      </div>
+                      <div className="text-xs text-gray-400">{user.role === 'admin' ? 'Security Admin' : 'Cadet'}</div>
+                    </div>
+                  </td>
+                  <td className="p-4 font-semibold text-gray-300">
+                    Level {user.level}
+                  </td>
+                  <td className="p-4 text-center">
+                    <span className="inline-flex items-center gap-1 text-amber-400 font-bold text-xs bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">
+                      <Flame className="w-3.5 h-3.5 fill-amber-400" /> {user.streak || 0}d
+                    </span>
+                  </td>
+                  <td className="p-4 text-right font-mono font-extrabold text-cyan-400">
+                    {user.xp.toLocaleString()} XP
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

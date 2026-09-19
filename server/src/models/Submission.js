@@ -16,6 +16,9 @@ const submissionSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    answerSubmitted: {
+      type: String,
+    },
     isCorrect: {
       type: Boolean,
       required: true,

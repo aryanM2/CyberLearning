@@ -12,6 +12,10 @@ export function ChallengeCard({ challenge }) {
     }
   };
 
+  const challengeId = challenge._id || challenge.id;
+  const xpVal = challenge.xpReward || challenge.xp || 100;
+  const isSolved = challenge.solved || challenge.completed;
+
   return (
     <div className="cyber-card cyber-card-hover p-6 flex flex-col justify-between h-full group border-l-4 border-l-cyan-500">
       <div>
@@ -20,7 +24,7 @@ export function ChallengeCard({ challenge }) {
             {challenge.difficulty}
           </span>
           <span className="text-xs text-gray-400 flex items-center gap-1 font-mono">
-            <Clock className="w-3.5 h-3.5 text-gray-500" /> {challenge.estimatedTime}
+            <Clock className="w-3.5 h-3.5 text-gray-500" /> {challenge.category || 'Lab'}
           </span>
         </div>
 
@@ -35,16 +39,16 @@ export function ChallengeCard({ challenge }) {
 
       <div className="border-t border-white/5 pt-4 mt-4 flex items-center justify-between text-xs">
         <span className="text-cyan-400 font-bold flex items-center gap-1 font-mono">
-          <Zap className="w-4 h-4 fill-cyan-400 text-cyan-400" /> +{challenge.xp} XP
+          <Zap className="w-4 h-4 fill-cyan-400 text-cyan-400" /> +{xpVal} XP
         </span>
 
-        {challenge.completed ? (
+        {isSolved ? (
           <span className="text-emerald-400 font-semibold flex items-center gap-1 bg-emerald-500/10 px-2.5 py-1 rounded-md border border-emerald-500/20">
             <CheckCircle2 className="w-3.5 h-3.5" /> Solved
           </span>
         ) : (
           <Link 
-            to={`/app/challenges/${challenge.id}`} 
+            to={`/app/challenges/${challengeId}`} 
             className="btn-primary text-xs py-1.5 px-3.5"
           >
             Start Lab <ArrowRight className="w-3.5 h-3.5" />

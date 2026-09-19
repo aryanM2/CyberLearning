@@ -1,25 +1,69 @@
-import React, { useState } from 'react';
-import { Search, Filter, BookOpen, Sparkles } from 'lucide-react';
-import { articles, categories } from '../../data/mockData';
+import React, { useEffect, useState } from 'react';
+import { Search, Filter, BookOpen, Sparkles, Loader2 } from 'lucide-react';
+import { getArticlesApi, getCategoriesApi, getCompletedArticlesListApi } from '../../services/articleService';
 import { ArticleCard } from '../../components/cards/ArticleCard';
 
 export function ArticlesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedDifficulty, setSelectedDifficulty] = useState('All');
+  const [articles, setArticles] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [completedIds, setCompletedIds] = useState(new Set());
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadArticlesData = async () => {
+      try {
+        setLoading(true);
+        const [artRes, catRes, compRes] = await Promise.allSettled([
+          getArticlesApi(),
+          getCategoriesApi(),
+          getCompletedArticlesListApi(),
+        ]);
+
+        if (artRes.status === 'fulfilled' && artRes.value.success) {
+          setArticles(artRes.value.data || []);
+        }
+
+        if (catRes.status === 'fulfilled' && catRes.value.success) {
+          setCategories(catRes.value.data || []);
+        }
+
+        if (compRes.status === 'fulfilled' && compRes.value.success) {
+          const completedList = compRes.value.data || [];
+          const ids = new Set(completedList.map(item => item.article?.toString() || item.article));
+          setCompletedIds(ids);
+        }
+      } catch (err) {
+        console.error('Failed to load articles:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadArticlesData();
+  }, []);
 
   const filteredArticles = articles.filter((art) => {
-    const matchesSearch = art.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          art.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const titleMatch = (art.title || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const excerptMatch = (art.excerpt || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = titleMatch || excerptMatch;
     const matchesCategory = selectedCategory === 'All' || art.category === selectedCategory;
     const matchesDifficulty = selectedDifficulty === 'All' || art.difficulty === selectedDifficulty;
     return matchesSearch && matchesCategory && matchesDifficulty;
   });
 
-  const featured = articles.filter(a => a.featured);
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 max-w-7xl mx-auto">
       
       {/* Header */}
       <div>
@@ -29,32 +73,20 @@ export function ArticlesPage() {
         </p>
       </div>
 
-      {/* FEATURED ARTICLES CAROUSEL/GRID */}
-      {featured.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-amber-400" /> Featured Reading Modules
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {featured.map((art) => (
-              <ArticleCard key={art.id} article={art} />
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* SEARCH AND FILTERS TOOLBAR */}
       <div className="cyber-card p-4 space-y-4">
         <div className="flex flex-col md:flex-row gap-4">
           {/* Search Input */}
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-gray-500 absolute left-3 top-3.5" />
+            <span className="input-icon-left">
+              <Search className="w-4 h-4" />
+            </span>
             <input 
               type="text" 
               placeholder="Search SQLi, XSS, Cryptography..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="input-cyber pl-10"
+              className="input-cyber has-left-icon"
             />
           </div>
 
@@ -87,7 +119,7 @@ export function ArticlesPage() {
           </button>
           {categories.map((cat) => (
             <button
-              key={cat.id}
+              key={cat._id || cat.id}
               onClick={() => setSelectedCategory(cat.name)}
               className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
                 selectedCategory === cat.name 
@@ -110,9 +142,13 @@ export function ArticlesPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredArticles.map((article) => (
-              <ArticleCard key={article.id} article={article} />
-            ))}
+            {filteredArticles.map((article) => {
+              const artId = article._id || article.id;
+              const isCompleted = completedIds.has(artId.toString());
+              return (
+                <ArticleCard key={artId} article={{ ...article, read: isCompleted }} />
+              );
+            })}
           </div>
         )}
       </div>

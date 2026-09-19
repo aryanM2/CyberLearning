@@ -1,9 +1,43 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Zap, Flame, Trophy, Gift, ArrowRight } from 'lucide-react';
-import { articles, challenges, leaderboardData, rewards } from '../../data/mockData';
+import { Shield, Zap, Flame, Trophy, Gift, ArrowRight, BookOpen } from 'lucide-react';
+import { getArticlesApi } from '../../services/articleService';
+import { getLeaderboardApi } from '../../services/leaderboardService';
+import { getRewardsApi } from '../../services/rewardService';
 
 export function LandingPage() {
+  const [featuredArticles, setFeaturedArticles] = useState([]);
+  const [topRankers, setTopRankers] = useState([]);
+  const [storeRewards, setStoreRewards] = useState([]);
+
+  useEffect(() => {
+    const fetchLandingData = async () => {
+      try {
+        const [artRes, leaderRes, rewRes] = await Promise.allSettled([
+          getArticlesApi({ limit: 3 }),
+          getLeaderboardApi(),
+          getRewardsApi(),
+        ]);
+
+        if (artRes.status === 'fulfilled' && artRes.value.success) {
+          setFeaturedArticles((artRes.value.data || []).slice(0, 3));
+        }
+
+        if (leaderRes.status === 'fulfilled' && leaderRes.value.success) {
+          setTopRankers((leaderRes.value.data?.leaderboard || []).slice(0, 4));
+        }
+
+        if (rewRes.status === 'fulfilled' && rewRes.value.success) {
+          setStoreRewards((rewRes.value.data?.rewards || []).slice(0, 2));
+        }
+      } catch (err) {
+        console.error('Error loading landing page data from DB:', err);
+      }
+    };
+
+    fetchLandingData();
+  }, []);
+
   return (
     <div className="w-full space-y-16 pb-20">
       
@@ -20,7 +54,7 @@ export function LandingPage() {
         </h1>
 
         <p className="hero-description">
-          The interactive security learning platform that turns cybersecurity education into a hands-on gamified experience. Build real-world defensive and offensive skills.
+          The interactive security learning platform that turns cybersecurity education into a hands-on experience. Build real-world defensive and offensive skills.
         </p>
 
         <div className="hero-actions">
@@ -28,7 +62,7 @@ export function LandingPage() {
             Start Learning Free <ArrowRight className="w-4 h-4" />
           </Link>
           <Link to="/login" className="btn-secondary">
-            Explore Demo Account
+            Sign In to Academy
           </Link>
         </div>
 
@@ -65,7 +99,7 @@ export function LandingPage() {
               </div>
               <div className="text-left">
                 <div className="font-bold text-white text-xs">Global Ranks</div>
-                <div className="text-[11px] text-gray-400">Compete on leaderboard</div>
+                <div className="text-[11px] text-gray-400 font-medium">Learners Leaderboard</div>
               </div>
             </div>
           </div>
@@ -77,14 +111,13 @@ export function LandingPage() {
               </div>
               <div className="text-left">
                 <div className="font-bold text-white text-xs">Real Rewards</div>
-                <div className="text-[11px] text-gray-400">Redeem swag & CEH</div>
+                <div className="text-[11px] text-gray-400">Redeem swag & Vouchers</div>
               </div>
             </div>
           </div>
         </div>
 
       </section>
-
 
       {/* HOW IT WORKS */}
       <section id="features" className="section-container">
@@ -112,7 +145,6 @@ export function LandingPage() {
         </div>
       </section>
 
-
       {/* TOPICS PREVIEW */}
       <section id="topics" className="section-container">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-10 gap-4">
@@ -123,23 +155,28 @@ export function LandingPage() {
           <Link to="/register" className="btn-outline">Browse All Articles <ArrowRight className="w-4 h-4" /></Link>
         </div>
 
-        <div className="grid-layout-3">
-          {articles.slice(0, 3).map((art) => (
-            <div key={art.id} className="cyber-card cyber-card-hover">
-              <div>
-                <span className="badge badge-cyan mb-3">{art.category}</span>
-                <h3 className="font-bold text-base text-white mb-2 leading-snug">{art.title}</h3>
-                <p className="text-xs text-gray-400 line-clamp-3 mb-4 leading-relaxed">{art.description}</p>
+        {featuredArticles.length === 0 ? (
+          <div className="cyber-card p-8 text-center text-gray-400 text-sm">
+            No articles published yet. Check back soon!
+          </div>
+        ) : (
+          <div className="grid-layout-3">
+            {featuredArticles.map((art) => (
+              <div key={art._id || art.id} className="cyber-card cyber-card-hover flex flex-col justify-between h-full">
+                <div>
+                  <span className="badge badge-cyan mb-3">{art.category}</span>
+                  <h3 className="font-bold text-base text-white mb-2 leading-snug">{art.title}</h3>
+                  <p className="text-xs text-gray-400 line-clamp-3 mb-4 leading-relaxed">{art.excerpt || art.description}</p>
+                </div>
+                <div className="flex justify-between items-center text-xs font-mono border-t border-white/10 pt-4 text-gray-400 mt-4">
+                  <span>{art.readTime || '5 min read'}</span>
+                  <span className="text-cyan-400 font-bold">+{art.xpReward || 50} XP</span>
+                </div>
               </div>
-              <div className="flex justify-between items-center text-xs font-mono border-t border-white/10 pt-4 text-gray-400 mt-4">
-                <span>{art.readingTime}</span>
-                <span className="text-cyan-400 font-bold">+{art.xpReward} XP</span>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
-
 
       {/* LEADERBOARD & REWARDS PREVIEW */}
       <section id="rewards" className="section-container">
@@ -153,23 +190,31 @@ export function LandingPage() {
               </h3>
               <Link to="/login" className="text-xs text-cyan-400 hover:underline">View All</Link>
             </div>
-            <div className="space-y-3">
-              {leaderboardData.slice(0, 4).map((user) => (
-                <div key={user.rank} className="flex items-center justify-between p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-                  <div className="flex items-center gap-3">
-                    <span className={`w-6 text-center font-mono font-bold text-xs ${user.rank === 1 ? 'text-amber-400' : 'text-gray-400'}`}>
-                      #{user.rank}
-                    </span>
-                    <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full object-cover" />
-                    <div>
-                      <div className="text-xs font-bold text-white">{user.name}</div>
-                      <div className="text-[10px] text-gray-400">Level {user.level}</div>
+            {topRankers.length === 0 ? (
+              <div className="p-6 text-center text-gray-400 text-xs">
+                No active leaderboard rankers yet. Be the first to earn XP!
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {topRankers.map((u) => (
+                  <div key={u.rank} className="flex items-center justify-between p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+                    <div className="flex items-center gap-3">
+                      <span className={`w-6 text-center font-mono font-bold text-xs ${u.rank === 1 ? 'text-amber-400' : 'text-gray-400'}`}>
+                        #{u.rank}
+                      </span>
+                      <div className="w-8 h-8 rounded-full bg-cyan-500/20 text-cyan-400 font-bold text-xs flex items-center justify-center overflow-hidden shrink-0 border border-gray-700">
+                        {u.avatar ? <img src={u.avatar} alt={u.name} className="w-full h-full object-cover" /> : u.name.charAt(0)}
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white">{u.name}</div>
+                        <div className="text-[10px] text-gray-400">Level {u.level}</div>
+                      </div>
                     </div>
+                    <span className="text-cyan-400 font-bold text-xs font-mono">{u.xp.toLocaleString()} XP</span>
                   </div>
-                  <span className="text-cyan-400 font-bold text-xs font-mono">{user.xp} XP</span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Rewards Store Preview */}
@@ -180,20 +225,27 @@ export function LandingPage() {
               </h3>
               <Link to="/login" className="text-xs text-cyan-400 hover:underline">View Shop</Link>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              {rewards.slice(0, 2).map((r) => (
-                <div key={r.id} className="bg-slate-900/80 border border-slate-800 rounded-xl p-3 text-center flex flex-col justify-between">
-                  <img src={r.image} alt={r.name} className="w-full h-24 object-cover rounded-lg mb-2" />
-                  <div className="font-bold text-white text-xs truncate">{r.name}</div>
-                  <div className="text-cyan-400 font-extrabold text-xs font-mono mt-1">{r.xpCost} XP</div>
-                </div>
-              ))}
-            </div>
+            {storeRewards.length === 0 ? (
+              <div className="p-6 text-center text-gray-400 text-xs">
+                No reward items added yet.
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                {storeRewards.map((r) => (
+                  <div key={r._id || r.id} className="bg-slate-900/80 border border-slate-800 rounded-xl p-4 text-center flex flex-col justify-between">
+                    <div className="w-12 h-12 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center mx-auto mb-2 font-bold">
+                      <Gift className="w-6 h-6" />
+                    </div>
+                    <div className="font-bold text-white text-xs truncate">{r.title}</div>
+                    <div className="text-cyan-400 font-extrabold text-xs font-mono mt-1">{r.xpCost} XP</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
         </div>
       </section>
-
 
       {/* CALL TO ACTION */}
       <section className="section-container">

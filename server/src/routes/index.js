@@ -4,6 +4,11 @@ import userRoutes from './userRoutes.js';
 import categoryRoutes from './categoryRoutes.js';
 import articleRoutes from './articleRoutes.js';
 import readingRoutes from './readingRoutes.js';
+import challengeRoutes from './challengeRoutes.js';
+import achievementRoutes from './achievementRoutes.js';
+import leaderboardRoutes from './leaderboardRoutes.js';
+import rewardRoutes from './rewardRoutes.js';
+import adminRoutes from './adminRoutes.js';
 import { successResponse } from '../utils/apiResponse.js';
 
 const router = express.Router();
@@ -23,6 +28,11 @@ router.use('/users', userRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/articles', articleRoutes);
 router.use('/reading', readingRoutes);
+router.use('/challenges', challengeRoutes);
+router.use('/achievements', achievementRoutes);
+router.use('/leaderboard', leaderboardRoutes);
+router.use('/rewards', rewardRoutes);
+router.use('/admin', adminRoutes);
 
 export default router;
 

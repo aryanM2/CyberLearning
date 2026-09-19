@@ -1,15 +1,82 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
-  Zap, Flame, BookOpen, Target, Trophy, Gift, ArrowRight, ShieldCheck, ChevronRight 
+  Zap, Flame, BookOpen, Target, Trophy, Gift, ArrowRight, ShieldCheck, ChevronRight, Loader2
 } from 'lucide-react';
-import { currentUser, articles, challenges, achievements } from '../../data/mockData';
+import { useAuth } from '../../context/AuthContext';
+import { getUserProfileApi } from '../../services/userService';
+import { getArticlesApi } from '../../services/articleService';
+import { getChallengesApi } from '../../services/challengeService';
+import { getAchievementsApi } from '../../services/achievementService';
+import { getRewardsApi } from '../../services/rewardService';
 import { XPProgressBar } from '../../components/common/XPProgressBar';
 import { AchievementCard } from '../../components/cards/AchievementCard';
 
 export function DashboardPage() {
-  const todaysChallenge = challenges.find(c => !c.completed) || challenges[0];
-  const recommendedArticle = articles.find(a => !a.read) || articles[0];
+  const { user: authUser } = useAuth();
+  const [profileData, setProfileData] = useState(null);
+  const [recommendedArticle, setRecommendedArticle] = useState(null);
+  const [featuredChallenge, setFeaturedChallenge] = useState(null);
+  const [achievements, setAchievements] = useState([]);
+  const [rewardsCount, setRewardsCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        const [profileRes, articlesRes, challengesRes, achievementsRes, rewardsRes] = await Promise.allSettled([
+          getUserProfileApi(),
+          getArticlesApi({ limit: 5 }),
+          getChallengesApi(),
+          getAchievementsApi(),
+          getRewardsApi(),
+        ]);
+
+        if (profileRes.status === 'fulfilled' && profileRes.value.success) {
+          setProfileData(profileRes.value.data);
+        }
+
+        if (articlesRes.status === 'fulfilled' && articlesRes.value.success) {
+          const arts = articlesRes.value.data || [];
+          setRecommendedArticle(arts[0] || null);
+        }
+
+        if (challengesRes.status === 'fulfilled' && challengesRes.value.success) {
+          const chs = challengesRes.value.data || [];
+          const unsolved = chs.find(c => !c.solved) || chs[0];
+          setFeaturedChallenge(unsolved || null);
+        }
+
+        if (achievementsRes.status === 'fulfilled' && achievementsRes.value.success) {
+          setAchievements(achievementsRes.value.data || []);
+        }
+
+        if (rewardsRes.status === 'fulfilled' && rewardsRes.value.success) {
+          const rws = rewardsRes.value.data?.rewards || [];
+          setRewardsCount(rws.length);
+        }
+      } catch (err) {
+        console.error('Error loading dashboard:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  const userData = profileData?.user || authUser || {};
+  const levelInfo = profileData?.levelInfo || { level: userData.level || 1, currentXP: userData.xp || 0, nextLevelXP: 1000 };
+  const stats = profileData?.stats || { completedArticlesCount: 0, solvedChallengesCount: 0 };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
@@ -23,10 +90,10 @@ export function DashboardPage() {
               <ShieldCheck className="w-4 h-4" /> Security Operations Center
             </div>
             <h1 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">
-              Welcome back, <span className="text-gradient">{currentUser.name}</span>!
+              Welcome back, <span className="text-gradient">{userData.name || 'Agent'}</span>!
             </h1>
             <p className="text-xs lg:text-sm text-gray-400 mt-1">
-              Level {currentUser.level} • {currentUser.title}
+              Level {userData.level || 1} • {userData.role === 'admin' ? 'Security Administrator' : 'Cyber Security Cadet'}
             </p>
           </div>
 
@@ -34,16 +101,16 @@ export function DashboardPage() {
           <div className="flex flex-wrap items-center gap-3">
             <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl px-4 py-2.5 text-center">
               <div className="flex items-center justify-center gap-1 text-amber-400 font-extrabold text-base font-mono">
-                <Flame className="w-4 h-4 fill-amber-400" /> {currentUser.streakDays}
+                <Flame className="w-4 h-4 fill-amber-400" /> {userData.streak || 0}
               </div>
               <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Day Streak</div>
             </div>
 
             <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-2xl px-4 py-2.5 text-center">
               <div className="flex items-center justify-center gap-1 text-cyan-400 font-extrabold text-base font-mono">
-                <Zap className="w-4 h-4 fill-cyan-400 text-cyan-400" /> #{currentUser.rank}
+                <Zap className="w-4 h-4 fill-cyan-400 text-cyan-400" /> {userData.xp || 0}
               </div>
-              <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Global Rank</div>
+              <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Total XP</div>
             </div>
           </div>
         </div>
@@ -51,9 +118,9 @@ export function DashboardPage() {
         {/* Level XP Bar */}
         <div className="mt-6 pt-6 border-t border-white/5">
           <XPProgressBar 
-            currentXp={currentUser.xp} 
-            nextLevelXp={currentUser.nextLevelXp} 
-            level={currentUser.level} 
+            currentXp={levelInfo.currentXP || userData.xp || 0} 
+            nextLevelXp={levelInfo.nextLevelXP || 1000} 
+            level={levelInfo.level || userData.level || 1} 
           />
         </div>
       </div>
@@ -65,7 +132,7 @@ export function DashboardPage() {
             <BookOpen className="w-6 h-6" />
           </div>
           <div>
-            <div className="text-2xl font-extrabold text-white font-mono">{currentUser.articlesReadCount}</div>
+            <div className="text-2xl font-extrabold text-white font-mono">{stats.completedArticlesCount}</div>
             <div className="text-xs text-gray-400 font-medium">Articles Read</div>
           </div>
         </div>
@@ -75,7 +142,7 @@ export function DashboardPage() {
             <Target className="w-6 h-6" />
           </div>
           <div>
-            <div className="text-2xl font-extrabold text-white font-mono">{currentUser.challengesCompletedCount}</div>
+            <div className="text-2xl font-extrabold text-white font-mono">{stats.solvedChallengesCount}</div>
             <div className="text-xs text-gray-400 font-medium">Labs Solved</div>
           </div>
         </div>
@@ -85,7 +152,7 @@ export function DashboardPage() {
             <Trophy className="w-6 h-6" />
           </div>
           <div>
-            <div className="text-2xl font-extrabold text-white font-mono">{currentUser.achievementsCount}</div>
+            <div className="text-2xl font-extrabold text-white font-mono">{userData.badges?.length || 0}</div>
             <div className="text-xs text-gray-400 font-medium">Badges Earned</div>
           </div>
         </div>
@@ -95,7 +162,7 @@ export function DashboardPage() {
             <Gift className="w-6 h-6" />
           </div>
           <div>
-            <div className="text-2xl font-extrabold text-white font-mono">4 Available</div>
+            <div className="text-2xl font-extrabold text-white font-mono">{rewardsCount} Available</div>
             <div className="text-xs text-gray-400 font-medium">Reward Swag</div>
           </div>
         </div>
@@ -105,40 +172,44 @@ export function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Recommended Article */}
-        <div className="cyber-card p-6 flex flex-col justify-between border-l-4 border-l-blue-500 h-full">
-          <div>
-            <div className="flex justify-between items-center mb-3">
-              <span className="badge badge-purple">Recommended Article</span>
-              <span className="text-xs text-cyan-400 font-bold font-mono">+{recommendedArticle.xpReward} XP</span>
+        {recommendedArticle ? (
+          <div className="cyber-card p-6 flex flex-col justify-between border-l-4 border-l-blue-500 h-full">
+            <div>
+              <div className="flex justify-between items-center mb-3">
+                <span className="badge badge-purple">Recommended Article</span>
+                <span className="text-xs text-cyan-400 font-bold font-mono">+{recommendedArticle.xpReward} XP</span>
+              </div>
+              <h3 className="font-bold text-lg text-white mb-2 leading-snug">{recommendedArticle.title}</h3>
+              <p className="text-xs text-gray-400 leading-relaxed mb-4">{recommendedArticle.excerpt || recommendedArticle.description}</p>
             </div>
-            <h3 className="font-bold text-lg text-white mb-2 leading-snug">{recommendedArticle.title}</h3>
-            <p className="text-xs text-gray-400 leading-relaxed mb-4">{recommendedArticle.description}</p>
+            <div className="flex items-center justify-between border-t border-white/5 pt-4 mt-auto">
+              <span className="text-xs text-gray-400 font-mono">{recommendedArticle.readTime || '5 min read'}</span>
+              <Link to={`/app/articles/${recommendedArticle._id || recommendedArticle.id}`} className="btn-primary text-xs">
+                Continue Reading <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
           </div>
-          <div className="flex items-center justify-between border-t border-white/5 pt-4 mt-auto">
-            <span className="text-xs text-gray-400 font-mono">{recommendedArticle.readingTime}</span>
-            <Link to={`/app/articles/${recommendedArticle.id}`} className="btn-primary text-xs">
-              Continue Reading <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-        </div>
+        ) : null}
 
         {/* Today's Challenge */}
-        <div className="cyber-card p-6 flex flex-col justify-between border-l-4 border-l-cyan-500 h-full">
-          <div>
-            <div className="flex justify-between items-center mb-3">
-              <span className="badge badge-cyan">Today's Lab Challenge</span>
-              <span className="text-xs text-cyan-400 font-bold font-mono">+{todaysChallenge.xp} XP</span>
+        {featuredChallenge ? (
+          <div className="cyber-card p-6 flex flex-col justify-between border-l-4 border-l-cyan-500 h-full">
+            <div>
+              <div className="flex justify-between items-center mb-3">
+                <span className="badge badge-cyan">Today's Lab Challenge</span>
+                <span className="text-xs text-cyan-400 font-bold font-mono">+{featuredChallenge.xpReward} XP</span>
+              </div>
+              <h3 className="font-bold text-lg text-white mb-2 leading-snug">{featuredChallenge.title}</h3>
+              <p className="text-xs text-gray-400 leading-relaxed mb-4">{featuredChallenge.description}</p>
             </div>
-            <h3 className="font-bold text-lg text-white mb-2 leading-snug">{todaysChallenge.title}</h3>
-            <p className="text-xs text-gray-400 leading-relaxed mb-4">{todaysChallenge.description}</p>
+            <div className="flex items-center justify-between border-t border-white/5 pt-4 mt-auto">
+              <span className="text-xs text-gray-400 font-mono">Difficulty: {featuredChallenge.difficulty}</span>
+              <Link to={`/app/challenges/${featuredChallenge._id || featuredChallenge.id}`} className="btn-primary text-xs">
+                Solve Lab Now <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
           </div>
-          <div className="flex items-center justify-between border-t border-white/5 pt-4 mt-auto">
-            <span className="text-xs text-gray-400 font-mono">Est: {todaysChallenge.estimatedTime}</span>
-            <Link to={`/app/challenges/${todaysChallenge.id}`} className="btn-primary text-xs">
-              Solve Lab Now <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-        </div>
+        ) : null}
 
       </div>
 
@@ -155,7 +226,7 @@ export function DashboardPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {achievements.slice(0, 2).map((ach) => (
-            <AchievementCard key={ach.id} achievement={ach} />
+            <AchievementCard key={ach._id || ach.id} achievement={ach} />
           ))}
         </div>
       </div>

@@ -1,6 +1,8 @@
 import ReadingProgress from '../models/ReadingProgress.js';
 import Article from '../models/Article.js';
 import { awardXP } from '../services/xpService.js';
+import { updateStreak } from '../services/streakService.js';
+import { checkAndUnlockAchievements } from '../services/achievementService.js';
 import { successResponse, errorResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
@@ -31,6 +33,9 @@ export const completeArticle = asyncHandler(async (req, res) => {
     completed: true,
   });
 
+  // Update daily activity streak
+  await updateStreak(userId);
+
   // Award XP via XP engine
   const xpReward = article.xpReward || 50;
   const xpResult = await awardXP(
@@ -40,6 +45,9 @@ export const completeArticle = asyncHandler(async (req, res) => {
     `Completed article: ${article.title}`
   );
 
+  // Check achievement unlocks
+  const unlockedAchievements = await checkAndUnlockAchievements(userId);
+
   return successResponse(res, 200, `Article completed! +${xpReward} XP earned`, {
     articleId: id,
     xpAwarded: xpReward,
@@ -47,6 +55,7 @@ export const completeArticle = asyncHandler(async (req, res) => {
     level: xpResult.level,
     leveledUp: xpResult.leveledUp,
     levelInfo: xpResult.levelInfo,
+    unlockedAchievements,
   });
 });
 

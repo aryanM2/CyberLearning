@@ -52,12 +52,12 @@ export const getUserProfile = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Update profile info (name, bio, avatar)
+ * @desc    Update profile info (name, email, bio, avatar)
  * @route   PUT /api/v1/users/profile
  * @access  Private
  */
 export const updateUserProfile = asyncHandler(async (req, res) => {
-  const { name, bio, avatar } = req.body;
+  const { name, email, bio, avatar } = req.body;
   const user = await User.findById(req.user.id);
 
   if (!user) {
@@ -67,6 +67,17 @@ export const updateUserProfile = asyncHandler(async (req, res) => {
   if (name) user.name = name;
   if (bio !== undefined) user.bio = bio;
   if (avatar !== undefined) user.avatar = avatar;
+
+  if (email && email.toLowerCase() !== user.email.toLowerCase()) {
+    const emailExists = await User.findOne({ 
+      email: email.toLowerCase(), 
+      _id: { $ne: user._id } 
+    });
+    if (emailExists) {
+      return errorResponse(res, 400, 'This email address is already in use by another account');
+    }
+    user.email = email.toLowerCase();
+  }
 
   await user.save();
 

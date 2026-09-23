@@ -11,20 +11,25 @@ const PORT = process.env.PORT || 5000;
 // Ensure company admin account exists on startup
 const initAdminAccount = async () => {
   try {
-    const adminExists = await User.findOne({ role: 'admin' });
-    if (!adminExists) {
-      const adminEmail = process.env.ADMIN_EMAIL || 'admin@nextgen-sec.com';
-      const adminPassword = process.env.ADMIN_PASSWORD || 'Admin@123456';
-      
-      const newAdmin = await User.create({
-        name: 'Company Security Admin',
-        email: adminEmail.toLowerCase(),
+    const adminEmail = (process.env.ADMIN_EMAIL || 'admin@nextgen-sec.com').toLowerCase();
+    const adminPassword = process.env.ADMIN_PASSWORD || 'NextGenAdmin#2026';
+
+    let adminUser = await User.findOne({ email: adminEmail }).select('+password');
+
+    if (!adminUser) {
+      adminUser = await User.create({
+        name: 'Enterprise Security Admin',
+        email: adminEmail,
         password: adminPassword,
         role: 'admin',
       });
-      console.log(`[Admin Security] Created initial company admin: ${newAdmin.email}`);
+      console.log(`[Admin Security] Created new dedicated Admin account: ${adminUser.email}`);
     } else {
-      console.log(`[Admin Security] Active company admin found: ${adminExists.email}`);
+      // Ensure role is admin and update password if needed
+      adminUser.role = 'admin';
+      adminUser.password = adminPassword;
+      await adminUser.save();
+      console.log(`[Admin Security] Synchronized dedicated Admin account credentials: ${adminUser.email}`);
     }
   } catch (err) {
     console.error(`[Admin Security Error] ${err.message}`);

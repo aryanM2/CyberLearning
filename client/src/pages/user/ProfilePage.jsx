@@ -50,6 +50,7 @@ export function ProfilePage() {
       setErrorMsg('');
       const res = await updateUserProfileApi({
         name: profile.name,
+        email: profile.email,
         bio: profile.bio,
         avatar: profile.avatar,
       });
@@ -59,7 +60,7 @@ export function ProfilePage() {
         if (res.data?.user) {
           updateUser(res.data.user);
         } else {
-          updateUser({ name: profile.name, bio: profile.bio, avatar: profile.avatar });
+          updateUser({ name: profile.name, email: profile.email, bio: profile.bio, avatar: profile.avatar });
         }
         setTimeout(() => setSaved(false), 3000);
       } else {
@@ -164,8 +165,9 @@ export function ProfilePage() {
             <input 
               type="email" 
               value={profile.email}
-              disabled
-              className="input-cyber opacity-60 cursor-not-allowed" 
+              onChange={(e) => setProfile({...profile, email: e.target.value})}
+              className="input-cyber" 
+              required
             />
           </div>
 
